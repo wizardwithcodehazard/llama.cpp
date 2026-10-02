@@ -130,11 +130,13 @@ int main(int argc, char ** argv) {
             batch_prompt.add(inp[i], i, seq_id, false);
         }
 
-        llama_process(ctx_tgt, LLAMA_PROCESS_TYPE_DECODE, batch_prompt.get());
+        if (batch_prompt.size() > 0) {
+            llama_process(ctx_tgt, LLAMA_PROCESS_TYPE_DECODE, batch_prompt.get());
 
-        if (!common_speculative_process(spec, batch_prompt)) {
-            LOG_ERR("%s", "failed to process speculative prompt\n");
-            return 1;
+            if (!common_speculative_process(spec, batch_prompt)) {
+                LOG_ERR("%s", "failed to process speculative prompt\n");
+                return 1;
+            }
         }
     }
 
@@ -354,7 +356,7 @@ int main(int argc, char ** argv) {
     LOG_INF("n_predict = %d\n", n_predict);
     LOG_INF("n_drafted = %d\n", n_drafted);
     LOG_INF("n_accept  = %d\n", n_accept);
-    LOG_INF("accept    = %.3f%%\n", 100.0f * n_accept / n_drafted);
+    LOG_INF("accept    = %.3f%%\n", n_drafted > 0 ? (100.0f * n_accept / n_drafted) : 0.0f);
 
     LOG_INF("\n");
     LOG_INF("draft:\n\n");

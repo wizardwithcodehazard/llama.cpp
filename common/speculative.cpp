@@ -383,6 +383,10 @@ struct common_speculative_impl_draft_simple : public common_speculative_impl {
             batch.add(dp.id_last, dp.pos0, seq_id, true);
         }
 
+        if (batch.size() == 0) {
+            return;
+        }
+
         int ret = llama_process(ctx_dft, LLAMA_PROCESS_TYPE_DECODE, batch.get());
         if (ret != 0) {
             SPC_ERR("llama_process returned %d\n", ret);
@@ -423,6 +427,24 @@ struct common_speculative_impl_draft_simple : public common_speculative_impl {
                     n_drafting--;
 
                     continue;
+                }
+
+                // entropy gate: stop drafting if prediction uncertainty is high
+                if (params.entropy_max > 0.0f) {
+                    float entropy = 0.0f;
+                    for (size_t k = 0; k < cur_p->size; ++k) {
+                        const float p = cur_p->data[k].p;
+                        if (p > 1e-12f) {
+                            entropy -= p * std::log2(p);
+                        }
+                    }
+                    if (entropy > params.entropy_max) {
+                        SPC_DBG(" - seq_id %d: draft token entropy %.3f exceeds max %.3f, stopping draft\n",
+                                seq_id, entropy, params.entropy_max);
+                        drafting[seq_id] = false;
+                        n_drafting--;
+                        continue;
+                    }
                 }
 
                 common_sampler_accept(smpl, id, true);
@@ -873,6 +895,24 @@ struct common_speculative_impl_draft_eagle3 : public common_speculative_impl {
                     n_drafting--;
 
                     continue;
+                }
+
+                // entropy gate: stop drafting if prediction uncertainty is high
+                if (params.entropy_max > 0.0f) {
+                    float entropy = 0.0f;
+                    for (size_t k = 0; k < cur_p->size; ++k) {
+                        const float p = cur_p->data[k].p;
+                        if (p > 1e-12f) {
+                            entropy -= p * std::log2(p);
+                        }
+                    }
+                    if (entropy > params.entropy_max) {
+                        SPC_DBG(" - seq_id %d: draft token entropy %.3f exceeds max %.3f, stopping draft\n",
+                                seq_id, entropy, params.entropy_max);
+                        drafting[seq_id] = false;
+                        n_drafting--;
+                        continue;
+                    }
                 }
 
                 common_sampler_accept(smpl, id, true);
@@ -1370,6 +1410,20 @@ struct common_speculative_impl_draft_dflash : public common_speculative_impl {
                         break;
                     }
 
+                    // entropy gate: stop drafting if prediction uncertainty is high
+                    if (params.entropy_max > 0.0f) {
+                        float entropy = 0.0f;
+                        for (size_t k = 0; k < cur_p->size; ++k) {
+                            const float p = cur_p->data[k].p;
+                            if (p > 1e-12f) {
+                                entropy -= p * std::log2(p);
+                            }
+                        }
+                        if (entropy > params.entropy_max) {
+                            break;
+                        }
+                    }
+
                     common_sampler_accept(smpl, id, true);
 
                     result.push_back(id);
@@ -1745,6 +1799,24 @@ struct common_speculative_impl_draft_mtp : public common_speculative_impl {
                     n_drafting--;
 
                     continue;
+                }
+
+                // entropy gate: stop drafting if prediction uncertainty is high
+                if (params.entropy_max > 0.0f) {
+                    float entropy = 0.0f;
+                    for (size_t k = 0; k < cur_p->size; ++k) {
+                        const float p = cur_p->data[k].p;
+                        if (p > 1e-12f) {
+                            entropy -= p * std::log2(p);
+                        }
+                    }
+                    if (entropy > params.entropy_max) {
+                        SPC_DBG(" - seq_id %d: draft token entropy %.3f exceeds max %.3f, stopping draft\n",
+                                seq_id, entropy, params.entropy_max);
+                        drafting[seq_id] = false;
+                        n_drafting--;
+                        continue;
+                    }
                 }
 
                 common_sampler_accept(smpl, id, true);

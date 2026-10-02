@@ -330,6 +330,7 @@ struct common_params_speculative_draft {
 
     float p_split = 0.1f; // speculative decoding split probability
     float p_min   = 0.0f; // minimum speculative decoding probability (greedy)
+    float entropy_max = 0.0f; // maximum Shannon entropy (in bits) to allow speculative drafting (0.0 = disabled)
 
     bool backend_sampling = true; // offload draft sampling to the backend (default: on)
 
